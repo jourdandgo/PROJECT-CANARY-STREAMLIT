@@ -5,3 +5,4 @@ plotly
 numpy
 shap
 google-generativeai
+xgboost
