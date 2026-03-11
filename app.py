@@ -121,10 +121,24 @@ model, model_results = train_model(X, y)
 model_acc = model_results['Random Forest']['Accuracy']
 model_auc = model_results['Random Forest']['ROC_AUC']
 
+# Handle Navigation State
+if 'nav_selection' not in st.session_state:
+    st.session_state.nav_selection = "Project Introduction"
+
 # Sidebar
 with st.sidebar:
     st.image("https://upload.wikimedia.org/wikipedia/commons/e/e4/Twitter_2012_logo.svg", width=40) # placeholder logo
     st.markdown("### PROJECT CANARY\n<span style='color:#8B949E; font-size:12px;'>POULTRY COMMAND CENTER</span>", unsafe_allow_html=True)
+    st.markdown("---")
+    
+    # Custom Sidebar Navigation
+    nav_options = ["Project Introduction", "Command Dashboard", "ML Workflow"]
+    current_index = nav_options.index(st.session_state.nav_selection) if st.session_state.nav_selection in nav_options else 0
+    nav_radio = st.radio("Navigation", nav_options, index=current_index, label_visibility="collapsed")
+    if st.session_state.nav_selection != nav_radio:
+        st.session_state.nav_selection = nav_radio
+        st.rerun()
+        
     st.markdown("---")
     st.markdown("⚙️ SYSTEM CONFIGURATION", unsafe_allow_html=True)
     st.markdown("<div style='background:#101318; padding:10px; border-radius:5px; border: 1px solid #1C212A; display:flex; align-items:center; gap:10px;'><div style='width:8px; height:8px; background:#00E676; border-radius:50%;'></div><span style='color:#00E676; font-size:12px; font-weight:bold;'>KEY ACTIVE</span></div>", unsafe_allow_html=True)
@@ -161,9 +175,60 @@ with st.sidebar:
 
 
 # Main Content
-tab_main, tab_ml = st.tabs(['🐓 Command Center', '🧠 ML Methodology'])
+if st.session_state.nav_selection == "Project Introduction":
+    st.markdown("<h5 style='color:#8B949E; font-size:12px; font-weight:600; letter-spacing:1px; margin-bottom: 20px;'>ⓘ PROJECT INTRODUCTION</h5>", unsafe_allow_html=True)
+    st.html("""
+    <div style='background:#101318; padding:50px; border-radius:16px; border: 1px solid #1C212A; position: relative; overflow: hidden; margin-top:10px;'>
+        <!-- Background icon faint watermark (chip) -->
+        <div style='position:absolute; right: -50px; top: -50px; font-size: 400px; opacity: 0.02; color: #FFFFFF;'>📟</div>
+        
+        <div style='background:#0B2B1B; color:#00E676; padding:6px 16px; border-radius:20px; font-size:12px; font-weight:bold; display:inline-block; margin-bottom:30px; border: 1px solid #00E676; letter-spacing: 1px;'>
+            <span style='font-size:12px;'>⚡</span> LIVE PROTOTYPE
+        </div>
+        <h1 style='font-size:54px; margin-bottom:0px; padding-bottom:0px; font-weight:800; color:#FFFFFF;'>Project Canary:</h1>
+        <h1 style='font-size:54px; color:#00E676; margin-top:0px; padding-top:0px; font-weight:800;'>Predictive Poultry Health</h1>
+        <p style='font-size:18px; color:#C9D1D9; margin-top:25px; margin-bottom:50px; line-height:1.6; max-width:750px;'>
+            In commercial poultry farming, reacting to health issues is often too late. By the time symptoms are visible, the flock's growth trajectory is compromised, and mortality risks spike.
+        </p>
+        
+        <div style='display:flex; gap:30px; margin-bottom:50px; position:relative; z-index:2;'>
+            <div style='flex:1;'>
+                <div style='display:flex; align-items:flex-start; gap:20px; background:#161B22; padding:25px; border-radius:12px; border: 1px solid #1C212A;'>
+                    <div style='background:#2D0F13; color:#FF5252; width:52px; height:52px; border-radius:12px; display:flex; justify-content:center; align-items:center; font-size:24px; flex-shrink:0; border: 1px solid #FF5252;'>
+                        🛡️
+                    </div>
+                    <div>
+                        <h3 style='margin-top:0; margin-bottom:12px; font-size:20px; color:#FFFFFF;'>The Problem</h3>
+                        <p style='color:#8B949E; font-size:15px; line-height:1.6; margin:0;'>
+                            Farmers rely on lagging indicators (mortality, visible sickness) to make decisions. Environmental stress (heat, humidity) causes invisible physiological damage before symptoms appear, leading to massive, preventable financial losses.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div style='flex:1;'>
+                <div style='display:flex; align-items:flex-start; gap:20px; background:#161B22; padding:25px; border-radius:12px; border: 1px solid #1C212A;'>
+                    <div style='background:#0B2B1B; color:#00E676; width:52px; height:52px; border-radius:12px; display:flex; justify-content:center; align-items:center; font-size:24px; flex-shrink:0; border: 1px solid #00E676;'>
+                        📈
+                    </div>
+                    <div>
+                        <h3 style='margin-top:0; margin-bottom:12px; font-size:20px; color:#FFFFFF;'>The Solution</h3>
+                        <p style='color:#8B949E; font-size:15px; line-height:1.6; margin:0;'>
+                            Project Canary uses Machine Learning to predict health risks <strong>24 hours in advance</strong> based on environmental telemetry. It allows farmers to proactively adjust conditions (e.g., cooling, water) to prevent illness entirely.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    """)
+    
+    st.write("")
+    if st.button("Access Command Dashboard   ⌄", type="primary"):
+        st.session_state.nav_selection = "Command Dashboard"
+        st.rerun()
 
-with tab_main:
+elif st.session_state.nav_selection == "Command Dashboard":
     st.markdown("<h5 style='color:#8B949E; font-size:12px; font-weight:600; letter-spacing:1px;'>︿ HOW TO USE THIS TOOL</h5>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
     with c1:
@@ -735,7 +800,7 @@ with tab_main:
         </div>
         """, unsafe_allow_html=True)
 
-with tab_ml:
+elif st.session_state.nav_selection == "ML Workflow":
     st.markdown('<h2>Machine Learning Workflow & Methodology</h2>', unsafe_allow_html=True)
     st.markdown('<p style="color:#8B949E; font-size:15px; margin-top:-10px;">A transparent look at the core intelligence powering Project Canary.</p>', unsafe_allow_html=True)
     st.write('')
@@ -824,53 +889,75 @@ with tab_ml:
         st.markdown('3. Uses an interpolative search space (0% to 100% intervention) to find the **Minimum Safe Threshold**—the exact temperature and water combination that drops the risk back into the Green Zone.')
 
     with col2:
-        # We can dynamically recreate the search space curve for the active zone to show the panel
-        if base_actual_prob_val >= 40:
-            curve_data = []
-            for step, (a_t, a_w, mag) in enumerate(search_space):
-                test_t = float(active_data['Max_Temperature_C']) + a_t * (t_target - float(active_data['Max_Temperature_C']))
-                test_w = float(active_data['Avg_Water_Intake_ml']) + a_w * (w_target - float(active_data['Avg_Water_Intake_ml']))
+        # Generate a standalone, textbook example of a stressed zone for the methodology demonstration
+        demo_t = 34.5  # Heat stress
+        demo_w = 120.0 # Low water intake
+        demo_age = 38
+        
+        t_target = 20.0 if demo_age >= 35 else max(32 - (demo_age*0.3), 20)
+        w_target = min(50 + (demo_age * 5), 350.0)
+        
+        # Build search space
+        search_space = []
+        for a_t in np.linspace(0, 1, 11):
+            for a_w in np.linspace(0, 1, 11):
+                search_space.append((a_t, a_w, a_t + a_w))
+        search_space.sort(key=lambda x: x[2])
+        
+        curve_data = []
+        for step, (a_t, a_w, mag) in enumerate(search_space):
+            test_t = demo_t + a_t * (t_target - demo_t)
+            test_w = demo_w + a_w * (w_target - demo_w)
+            
+            test_h = 65.0
+            test_f = 160.0
+            test_thi = 0.8 * test_t + (test_h / 100) * (test_t - 14.4) + 46.4
+            test_ratio = min(test_w / test_f, 3.5)
+            test_delta = -15.0
+            
+            test_data_df = pd.DataFrame([{
+                'Bird_Age_Days': demo_age,
+                'Max_Temperature_C': test_t,
+                'Avg_Humidity_Percent': test_h,
+                'Avg_Water_Intake_ml': test_w,
+                'Avg_Feed_Intake_g': test_f,
+                'THI': test_thi,
+                'Water_to_Feed_Ratio': test_ratio,
+                'Feed_Intake_Delta': test_delta
+            }])
+            
+            tx = scaler.transform(test_data_df[feature_cols])
+            p = model.predict_proba(tx)[0, 1]
+            
+            s = 0.0
+            if test_t > t_target + 3.0: s += (test_t - (t_target + 3.0)) * 0.05
+            elif test_t < t_target - 3.0: s += ((t_target - 3.0) - test_t) * 0.05
+            if test_w < w_target * 0.8: s += 0.1
+            if test_t > t_target + 3.0 and test_w < w_target * 0.9: s += 0.2
+            
+            fp = min(max(p + s, 0.0), 1.0) * 100
+            curve_data.append({"Intervention Magnitude (%)": mag * 50, "Predicted Risk (%)": fp}) # mag sum max is 2, so * 50 is %
+            
+            if fp < 40: break # Found safe point
                 
-                test_data = active_data.copy()
-                test_data['Max_Temperature_C'] = test_t
-                test_data['Avg_Water_Intake_ml'] = test_w
-                test_data['THI'] = 0.8 * test_t + (test_data['Avg_Humidity_Percent'] / 100) * (test_t - 14.4) + 46.4
-                test_data['Water_to_Feed_Ratio'] = min(test_w / (test_data['Avg_Feed_Intake_g'] if test_data['Avg_Feed_Intake_g'] > 0 else 1), 3.5)
-                
-                tx = scaler.transform(pd.DataFrame([test_data])[feature_cols])
-                p = model.predict_proba(tx)[0, 1]
-                
-                s = 0.0
-                if test_t > t_target + 3.0: s += (test_t - (t_target + 3.0)) * 0.05
-                elif test_t < t_target - 3.0: s += ((t_target - 3.0) - test_t) * 0.05
-                if test_w < w_target * 0.8: s += 0.1
-                if test_t > t_target + 3.0 and test_w < w_target * 0.9: s += 0.2
-                
-                fp = min(max(p + s, 0.0), 1.0) * 100
-                curve_data.append({"Intervention Magnitude (%)": mag * 50, "Predicted Risk (%)": fp}) # mag sum max is 2, so * 50 is %
-                
-                if fp < 40: break # Found safe point
-                
-            if curve_data:
-                curve_df = pd.DataFrame(curve_data)
-                fig_curve = px.line(curve_df, x="Intervention Magnitude (%)", y="Predicted Risk (%)", markers=True)
-                # Add horizontal line for 40% safety threshold
-                fig_curve.add_hline(y=40, line_dash="dash", line_color="#00E676", annotation_text="Safety Threshold (40%)")
-                fig_curve.update_traces(line_color="#FF5252", marker_color="#FF5252")
-                fig_curve.update_layout(
-                    title="DICE Engine Risk Reduction Simulation",
-                    template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                    margin=dict(l=0, r=20, t=30, b=0), height=250
-                )
-                st.plotly_chart(fig_curve, use_container_width=True, config={'displayModeBar': False})
-                
-                st.markdown("""
-                <div style='background:#0B2B1B; border:1px solid #00E676; padding:15px; border-radius:8px; margin-top:10px;'>
-                    <strong style='color:#00E676;'>💡 Key Finding:</strong> The DICE engine actively solves the problem rather than just reporting it. The curve above visualizes the model searching through hundreds of temperature/water combinations until it finds the exact, minimum viable intervention required to drop the flock's risk below the 40% safety threshold.
-                </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.markdown("<div style='background:#0B2B1B; border:1px solid #00E676; padding:20px; text-align:center; border-radius:8px; color:#00E676;'>Active zone is already healthy.<br>DICE Engine is idle.</div>", unsafe_allow_html=True)
+        if curve_data:
+            curve_df = pd.DataFrame(curve_data)
+            fig_curve = px.line(curve_df, x="Intervention Magnitude (%)", y="Predicted Risk (%)", markers=True)
+            # Add horizontal line for 40% safety threshold
+            fig_curve.add_hline(y=40, line_dash="dash", line_color="#00E676", annotation_text="Safety Threshold (40%)")
+            fig_curve.update_traces(line_color="#FF5252", marker_color="#FF5252")
+            fig_curve.update_layout(
+                title="DICE Engine Risk Reduction Simulation",
+                template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+                margin=dict(l=0, r=20, t=30, b=0), height=250
+            )
+            st.plotly_chart(fig_curve, use_container_width=True, config={'displayModeBar': False})
+            
+            st.markdown("""
+            <div style='background:#0B2B1B; border:1px solid #00E676; padding:15px; border-radius:8px; margin-top:10px;'>
+                <strong style='color:#00E676;'>💡 Key Finding:</strong> The DICE engine actively solves the problem rather than just reporting it. The curve above visualizes the model searching through hundreds of temperature/water combinations until it finds the exact, minimum viable intervention required to drop the flock's risk below the 40% safety threshold.
+            </div>
+            """, unsafe_allow_html=True)
     
     st.divider()
     
