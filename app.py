@@ -59,27 +59,33 @@ def load_and_preprocess_data():
     df['Date'] = pd.to_datetime(df['Date'])
     df = df.sort_values(by=['Zone_ID', 'Date'])
     
-    # Biological Feature Engineering
+    # Biological Feature Engineering (Instantaneous)
     df['THI'] = 0.8 * df['Max_Temperature_C'] + (df['Avg_Humidity_Percent'] / 100) * (df['Max_Temperature_C'] - 14.4) + 46.4
     df['Water_to_Feed_Ratio'] = df['Avg_Water_Intake_ml'] / df['Avg_Feed_Intake_g'].replace(0, 1)
     df['Feed_Intake_Delta'] = df.groupby('Zone_ID')['Avg_Feed_Intake_g'].diff().fillna(0)
     
+    # NEW: Augmented Features (Cumulative Stress & Interactions)
+    # Rolling 3-day means to capture lingering heat/dehydration stress
+    df['Temp_3d_Avg'] = df.groupby('Zone_ID')['Max_Temperature_C'].transform(lambda x: x.rolling(window=3, min_periods=1).mean())
+    df['Water_3d_Avg'] = df.groupby('Zone_ID')['Avg_Water_Intake_ml'].transform(lambda x: x.rolling(window=3, min_periods=1).mean())
+    
+    # Interaction: Older birds are more sensitive to heat
+    df['Age_Temp_Interaction'] = df['Bird_Age_Days'] * df['Max_Temperature_C']
+    
     # Create target_status (tomorrow's health)
     df['target_status'] = df.groupby('Zone_ID')['Health_Status'].shift(-1)
     
-    # Instead of forcing the last day to be "At_Risk", we just drop it from training.
-    # The 'latest_data' used for predictions will still contain the last day's *features*.
     df_train = df.dropna(subset=['target_status']).copy()
     
     df_train['Health_Status_Enc'] = df_train['Health_Status'].apply(lambda x: 0 if x == 'Healthy' else 1)
     df_train['target_status_enc'] = df_train['target_status'].apply(lambda x: 0 if x == 'Healthy' else 1)
     
-    # We also need encoded Health Status on the main df for the latest day predictions
     df['Health_Status_Enc'] = df['Health_Status'].apply(lambda x: 0 if x == 'Healthy' else 1)
     
     features = [
         'Bird_Age_Days', 'Max_Temperature_C', 'Avg_Humidity_Percent', 
-        'Avg_Water_Intake_ml', 'Avg_Feed_Intake_g', 'THI', 'Water_to_Feed_Ratio', 'Feed_Intake_Delta'
+        'Avg_Water_Intake_ml', 'Avg_Feed_Intake_g', 'THI', 'Water_to_Feed_Ratio', 
+        'Feed_Intake_Delta', 'Temp_3d_Avg', 'Water_3d_Avg', 'Age_Temp_Interaction'
     ]
     scaler = StandardScaler()
     
@@ -295,8 +301,10 @@ elif st.session_state.nav_selection == "Command Dashboard":
         fp = min(max(base_probs[idx_pos] + stress, 0.0), 1.0)
         final_probs.append(fp)
 
+    # RECALL OPTIMIZATION: We lower the threshold from 0.5 to 0.35 to catch more stress events.
+    # It is better to have a few false alarms than to miss a mortality event.
     latest_data['Risk_Prob'] = final_probs
-    latest_data['Predicted_Risk'] = [1 if p > 0.5 else 0 for p in final_probs]
+    latest_data['Predicted_Risk'] = [1 if p > 0.35 else 0 for p in final_probs]
 
     # Session State for Zone Selection
     if 'active_zone' not in st.session_state:
