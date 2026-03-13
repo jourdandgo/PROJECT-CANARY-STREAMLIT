@@ -5,4 +5,6 @@ plotly
 numpy
 shap
 google-generativeai
+matplotlib
+seaborn
 xgboost

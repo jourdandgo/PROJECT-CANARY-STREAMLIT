@@ -283,7 +283,13 @@ elif st.session_state.nav_selection == "Command Dashboard":
     final_probs = []
     for idx_pos, (i, row) in enumerate(latest_data.iterrows()):
         age = row['Bird_Age_Days']
-        t_targ_ews = 20.0 if age >= 35 else max(32 - (age*0.3), 20)
+        
+        # Expert Heuristic Sync: Align Stress Index with 4-Stage Roadmap
+        if age <= 10: t_targ_ews = 31.0
+        elif age <= 25: t_targ_ews = max(31 - ((age - 10) * 0.6), 22)
+        elif age <= 35: t_targ_ews = 21.0
+        else: t_targ_ews = 20.0
+        
         w_targ_ews = min(50 + (age * 5), 350.0)
 
         stress = 0.0
@@ -304,7 +310,7 @@ elif st.session_state.nav_selection == "Command Dashboard":
     # RECALL OPTIMIZATION: We lower the threshold from 0.5 to 0.35 to catch more stress events.
     # It is better to have a few false alarms than to miss a mortality event.
     latest_data['Risk_Prob'] = final_probs
-    latest_data['Predicted_Risk'] = [1 if p > 0.35 else 0 for p in final_probs]
+    latest_data['Predicted_Risk'] = [1 if p >= 0.35 else 0 for p in final_probs]
 
     # Session State for Zone Selection
     if 'active_zone' not in st.session_state:
@@ -529,10 +535,32 @@ elif st.session_state.nav_selection == "Command Dashboard":
 
     # Baseline constraints
     bird_age = int(active_data['Bird_Age_Days'])
-    t_target = 20.0 if bird_age >= 35 else max(32 - (bird_age*0.3), 20)
-    h_target = 60.0
-    w_target = min(50 + (bird_age * 5), 350.0)
-    f_target = min(20 + (bird_age * 4), 220.0)
+    # --- Granular Biological Targets (Industry Standards: Aviagen/Cobb) ---
+    if bird_age <= 10:
+        # 1. Starter/Brooding Phase (Critical for internal organ development)
+        t_target = 31.0
+        h_target = 65.0
+        w_target = min(50 + (bird_age * 5), 350.0)
+        f_target = min(20 + (bird_age * 4), 220.0)
+    elif bird_age <= 25:
+        # 2. Grower Phase (Muscle and bone structural development)
+        # Gradual step-down from 30 to 22 degrees
+        t_target = max(31 - ((bird_age - 10) * 0.6), 22)
+        h_target = 60.0
+        w_target = min(50 + (bird_age * 6), 350.0)
+        f_target = min(20 + (bird_age * 5), 220.0)
+    elif bird_age <= 35:
+        # 3. Finisher Phase (Highest metabolic heat load / Critical heat risk)
+        t_target = 21.0
+        h_target = 55.0
+        w_target = min(50 + (bird_age * 7), 350.0)
+        f_target = min(20 + (bird_age * 6), 220.0)
+    else:
+        # 4. Pre-Harvest Phase (Focus on bird survival and final weight stasis)
+        t_target = 20.0
+        h_target = 50.0
+        w_target = min(50 + (bird_age * 8), 350.0)
+        f_target = min(20 + (bird_age * 6), 220.0)
 
     # Init session state for sliders if changing zones
     if f'sim_temp_{st.session_state.active_zone}' not in st.session_state:
@@ -546,7 +574,7 @@ elif st.session_state.nav_selection == "Command Dashboard":
     safe_temp = float(active_data['Max_Temperature_C'])
     safe_water = float(active_data['Avg_Water_Intake_ml'])
 
-    if base_actual_prob_val >= 40:
+    if base_actual_prob_val >= 35:
         # Build search space interpolating towards the ideal target in steps
         search_space = []
         for a_t in np.linspace(0, 1, 11):
@@ -563,6 +591,8 @@ elif st.session_state.nav_selection == "Command Dashboard":
             test_data = active_data.copy()
             test_data['Max_Temperature_C'] = test_t
             test_data['Avg_Water_Intake_ml'] = test_w
+            # Sync interaction and biological indices for simulation consistency
+            test_data['Age_Temp_Interaction'] = test_data['Bird_Age_Days'] * test_t
             test_data['THI'] = 0.8 * test_t + (test_data['Avg_Humidity_Percent'] / 100) * (test_t - 14.4) + 46.4
 
             # Cap the ratio to prevent the model from assuming sheer water intake without feed is a disease symptom
@@ -581,7 +611,7 @@ elif st.session_state.nav_selection == "Command Dashboard":
 
             test_final_prob = min(max(test_base_prob + test_stress, 0.0), 1.0) * 100
 
-            if test_final_prob < 40:
+            if test_final_prob < 35:
                 safe_temp = test_t
                 safe_water = test_w
                 found_safe = True
@@ -593,6 +623,9 @@ elif st.session_state.nav_selection == "Command Dashboard":
         st.session_state[f'sim_hum_{active}'] = float(h_target)
         st.session_state[f'sim_water_{active}'] = float(w_target)
         st.session_state[f'sim_feed_{active}'] = float(f_target)
+    
+    with st.expander("🕊️ How does Optimization work?"):
+        st.markdown(f"**Biological Roadmap Logic:** This snaps your barn settings to the industry-standard 'Plateau of Safety' for {bird_age}-day-old birds.")
 
     with lc1:
         st.markdown("<h4>⚙️ Control Levers</h4>", unsafe_allow_html=True)
@@ -655,7 +688,7 @@ elif st.session_state.nav_selection == "Command Dashboard":
         st.markdown("<div style='text-align:center;'>", unsafe_allow_html=True)
 
         # Custom Gauge Chart
-        c_color = "#00E676" if final_prob < 40 else "#FF5252"
+        c_color = "#00E676" if final_prob < 35 else "#FF5252"
         fig = go.Figure(go.Indicator(
             mode = "gauge+number",
             value = final_prob,
@@ -668,18 +701,26 @@ elif st.session_state.nav_selection == "Command Dashboard":
                 'borderwidth': 2,
                 'bordercolor': "#1C212A",
                 'steps': [
-                    {'range': [0, 40], 'color': 'rgba(0, 230, 118, 0.1)'},
-                    {'range': [40, 100], 'color': 'rgba(255, 82, 82, 0.1)'}
+                    {'range': [0, 35], 'color': 'rgba(0, 230, 118, 0.1)'},
+                    {'range': [35, 100], 'color': 'rgba(255, 82, 82, 0.1)'}
                 ]
             }
         ))
         fig.update_layout(height=280, margin=dict(l=20, r=20, t=30, b=10), paper_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
-        if final_prob < 40:
+        if final_prob < 35:
             st.markdown("<div style='background:#0B2B1B; border:1px solid #00E676; color:#00E676; padding:15px; border-radius:8px; text-align:center;'><strong>Stable Condition</strong><br>Flock is within safety thresholds.</div>", unsafe_allow_html=True)
         else:
             st.markdown("<div style='background:#2D0F13; border:1px solid #FF5252; color:#FF5252; padding:15px; border-radius:8px; text-align:center;'><strong>Critical Risk</strong><br>Adjust environment immediately.</div>", unsafe_allow_html=True)
+
+        with st.expander("🧬 How is Risk Calculated?"):
+            st.markdown("""
+            **The Hybrid Engine Logic:**
+            1. **AI Layer**: Random Forest predicts risk based on 3rd-day cumulative trends (Sustained Heat & Panic Drinking signals).
+            2. **Expert Layer**: We add binary penalties if the barn drifts +/- 3°C from the ideal 4-stage biological target.
+            3. **Trigger**: If the hybrid score passes **35%**, the alarm triggers.
+            """)
 
         st.button("⚙️ OPTIMIZE FOR BIRD AGE", on_click=optimize_sliders, use_container_width=True)
 
@@ -690,7 +731,7 @@ elif st.session_state.nav_selection == "Command Dashboard":
             if 'chat_messages' not in st.session_state:
                 st.session_state.chat_messages = []
 
-                if base_actual_prob_val < 40:
+                if base_actual_prob_val < 35:
                     msg = "The flock is currently in a Stable Condition. I am monitoring the telemetry, but no intervention is needed right now. Good work!"
                     st.session_state.chat_messages.append({"role": "assistant", "content": msg})
                 else:
@@ -946,13 +987,13 @@ elif st.session_state.nav_selection == "ML Workflow":
             fp = min(max(p + s, 0.0), 1.0) * 100
             curve_data.append({"Intervention Magnitude (%)": mag * 50, "Predicted Risk (%)": fp}) # mag sum max is 2, so * 50 is %
             
-            if fp < 40: break # Found safe point
+            if fp < 35: break # Found safe point
                 
         if curve_data:
             curve_df = pd.DataFrame(curve_data)
             fig_curve = px.line(curve_df, x="Intervention Magnitude (%)", y="Predicted Risk (%)", markers=True)
-            # Add horizontal line for 40% safety threshold
-            fig_curve.add_hline(y=40, line_dash="dash", line_color="#00E676", annotation_text="Safety Threshold (40%)")
+            # Add horizontal line for 35% safety threshold
+            fig_curve.add_hline(y=35, line_dash="dash", line_color="#00E676", annotation_text="Safety Threshold (35%)")
             fig_curve.update_traces(line_color="#FF5252", marker_color="#FF5252")
             fig_curve.update_layout(
                 title="DICE Engine Risk Reduction Simulation",
@@ -960,10 +1001,18 @@ elif st.session_state.nav_selection == "ML Workflow":
                 margin=dict(l=0, r=20, t=30, b=0), height=250
             )
             st.plotly_chart(fig_curve, use_container_width=True, config={'displayModeBar': False})
+        
+        with st.expander("🎲 How does DICE work?"):
+            st.markdown("""
+            **The Simulation Logic:**
+            1. Every slider movement triggers a **100-step interpolative search**.
+            2. The AI re-calculates the probability for every micro-adjustment.
+            3. It stops at the **minimum viable change** required to hit the 35% safety zone.
+            """)
             
             st.markdown("""
             <div style='background:#0B2B1B; border:1px solid #00E676; padding:15px; border-radius:8px; margin-top:10px;'>
-                <strong style='color:#00E676;'>💡 Key Finding:</strong> The DICE engine actively solves the problem rather than just reporting it. The curve above visualizes the model searching through hundreds of temperature/water combinations until it finds the exact, minimum viable intervention required to drop the flock's risk below the 40% safety threshold.
+                <strong style='color:#00E676;'>💡 Key Finding:</strong> The DICE engine actively solves the problem rather than just reporting it. The curve above visualizes the model searching through hundreds of temperature/water combinations until it finds the exact, minimum viable intervention required to drop the flock's risk below the 35% safety threshold.
             </div>
             """, unsafe_allow_html=True)
     
