@@ -877,10 +877,10 @@ elif st.session_state.nav_selection == "ML Workflow":
     st.markdown('<br><strong>Why we chose "Class Weights" over "SMOTE" for rare events:</strong>', unsafe_allow_html=True)
     st.markdown("""In a healthy flock, a "sick day" is rare. This makes it hard for a computer to learn what sickness looks like. Some data science techniques (like **SMOTE**) try to fix this by inventing "fake" sick days to rebalance the data. However, in agriculture, inventing fake data is dangerous because it might create sensor readings that are physically impossible in a real barn. Instead, we used **Class Weights**. This simply tells the AI: *"Pay 100x more attention to the real sick days we do have."* This ensures our predictions stay grounded in real-world biology.""")
     
-    st.markdown('<br><strong>Why Random Forest over Gradient Boosting for Farm Data?</strong>', unsafe_allow_html=True)
-    st.markdown('A common question is why we don\'t use even more complex models like Gradient Boosting. Here is the simple answer:')
-    st.markdown('**Gradient Boosting** is like a perfectionist student who keeps trying to fix tiny errors from the previous test. It is powerful, but in a barn, it can overfit to "noise"—like a single sensor glitch or a sudden gust of wind. This leads to false alarms.')
-    st.markdown('**Random Forest** is like a panel of 100 average students. Each one looks at a slightly different part of the barn data. They take a **Majority Vote**, which makes the final decision much more stable and harder to confuse with weird sensor spikes. For a farmer, **stability** is more valuable than mathematical "perfection."')
+    st.markdown('<br><strong>Why Random Forest over Logistic Regression? (Rigid Ruler vs. Expert Team)</strong>', unsafe_allow_html=True)
+    st.markdown('You might notice that **Logistic Regression** achieves a very high mathematical score. However, we chose **Random Forest** for a critical biological reason:')
+    st.markdown('**Logistic Regression** is like a **Rigid Ruler**. It assumes risk increases in a perfectly straight line (e.g., +1 degree always equals +5% risk). But biology isn\'t linear. A 1-degree rise at 20&deg;C is harmless, but a 1-degree rise at 32&deg;C is a catastrophe.')
+    st.markdown('**Random Forest** is like an **Expert Team**. It understands "Tipping Points." It knows that the impact of temperature changes depending on the bird\'s age and the barn\'s humidity. While the ruler (LR) is simpler, the Expert Team (RF) is the only one that truly understands how a flock "crashes" when biological limits are hit.')
     
     st.divider()
     
