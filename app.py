@@ -992,6 +992,12 @@ elif st.session_state.nav_selection == "ML Workflow":
         </div>
         """, unsafe_allow_html=True)
     
+    st.markdown("<br><strong>⚠️ The 'Counter-Intuitive' Paradox: Why risk can increase when I cool things down?</strong>", unsafe_allow_html=True)
+    st.markdown("""You might notice that dropping the temperature sometimes *increases* the risk gauge. This isn't a bug; it's a reflection of **Biological Equilibrium**:""")
+    st.markdown("""1. **The U-Curve (Cold Stress):** Biology isn't a straight line. If you cool the barn too far or too fast, the AI flags **Cold Stress (Hypothermia)**. For older birds, the 'safe floor' is higher than you think.
+2. **Metabolic Shock:** Sudden, extreme swings are stressors themselves. The AI recognizes that 'Environmental Instability'—even toward the cold side—is a leading indicator of flock distress.
+3. **The Sweet Spot:** The AI isn't looking for the *coldest* setting; it's looking for the **Optimal Equilibrium** where the bird's heart and lungs are under the least strain.""")
+    
     st.divider()
     
     st.markdown('### 4. The Biological DICE Engine')
