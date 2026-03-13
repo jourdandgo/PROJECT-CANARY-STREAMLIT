@@ -412,7 +412,7 @@ elif st.session_state.nav_selection == "Command Dashboard":
     with h2:
         st.markdown(f"""<div style="background:#101318; border-radius:8px; border:1px solid #1C212A; padding:20px;">
             <p style='font-size:12px; font-weight:600; color:#8B949E; margin-bottom:20px;'>WHY ARE THEY AT RISK? ({active_data['Zone_ID']})</p>
-        """, unsafe_allow_html=True)
+        </div>""", unsafe_allow_html=True)
 
         inner1, inner2 = st.columns([1, 1])
 
@@ -428,55 +428,51 @@ elif st.session_state.nav_selection == "Command Dashboard":
             else:
                 sv = shap_values[0, :, 1] if len(shap_values.shape) > 2 else shap_values[0]
 
-            # Map technical API names to Farm-Friendly terms
             feature_labels = {
-                'Max_Temperature_C': "Barn Temperature",
-                'Avg_Humidity_Percent': "Barn Humidity",
-                'Avg_Water_Intake_ml': "Water Intake",
-                'Avg_Feed_Intake_g': "Feed Intake",
-                'Bird_Age_Days': "Bird Age",
-                'THI': "Heat-Humidity Index",
-                'Water_to_Feed_Ratio': "Water/Feed Ratio",
-                'Feed_Intake_Delta': "Feed Intake Change"
+                'Max_Temperature_C': "Temp", 'Avg_Humidity_Percent': "Humid",
+                'Avg_Water_Intake_ml': "Water", 'Avg_Feed_Intake_g': "Feed",
+                'Bird_Age_Days': "Age", 'THI': "Heat Index",
+                'Water_to_Feed_Ratio': "W/F Ratio", 'Feed_Intake_Delta': "F-Delta",
+                'Temp_3d_Avg': "3d-Temp", 'Water_3d_Avg': "3d-Water",
+                'Age_Temp_Interaction': "Age/Heat"
             }
 
-            feat_df = pd.DataFrame({"Feature": [feature_labels.get(f, f) for f in feature_cols], "Impact": sv})
+            wf_df = pd.DataFrame({
+                "Feature": [feature_labels.get(f, f) for f in feature_cols],
+                "Impact": sv * 100 # Scale to percentage points
+            })
+            
+            # Sort by impact for a cleaner waterfall flow
+            wf_df = wf_df.reindex(wf_df['Impact'].abs().sort_values(ascending=False).index)
+            wf_df = wf_df.head(6) # Show top 6 contributors
 
-            # For the presentation peg, the user wants to see bars extending to the right
-            # We will take the absolute impact to show "Magnitude of Influence" 
-            # Normalize the magnitude to a 0-100 scale for readibality by non-technical users
-            feat_df['Magnitude'] = feat_df['Impact'].abs()
-            max_mag = feat_df['Magnitude'].max()
-            if max_mag > 0:
-                feat_df['Score'] = (feat_df['Magnitude'] / max_mag) * 85 + 10 # 10 to 95 scale
-            else:
-                feat_df['Score'] = 0
-
-            # Top 4 most impactful features driving the projection
-            feat_df = feat_df.sort_values(by="Score", ascending=False).head(4).sort_values(by="Score")
-
-            # Color coding: Red = pushing toward At Risk, Green = pulling toward Healthy
-            colors = ['#FF5252' if val > 0 else '#00E676' for val in feat_df['Impact']]
-
-            fig = go.Figure(go.Bar(
-                x=feat_df['Score'], y=feat_df['Feature'], orientation='h', marker_color=colors, width=0.4,
-                hovertemplate="<b>%{y}</b><br>Risk Impact Score: %{x:.1f}/100<extra></extra>"
+            fig = go.Figure(go.Waterfall(
+                name = "Risk Contribution", orientation = "v",
+                measure = ["relative"] * len(wf_df),
+                x = wf_df['Feature'],
+                textposition = "outside",
+                text = [f"+{x:.1f}" if x > 0 else f"{x:.1f}" for x in wf_df['Impact']],
+                y = wf_df['Impact'],
+                connector = {"line":{"color":"#1C212A"}},
+                increasing = {"marker":{"color":"#FF5252"}}, # Red for increasing risk
+                decreasing = {"marker":{"color":"#00E676"}}  # Green for decreasing risk
             ))
 
-            # Make the chart extremely native looking
             fig.update_layout(
+                title="Risk Contribution (Local SHAP Points)",
                 template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                margin=dict(l=0, r=20, t=0, b=0), height=300,
-                xaxis=dict(showgrid=True, range=[0, 100], gridcolor='#1C212A', zeroline=True, zerolinecolor='#8B949E', showticklabels=False),
-                yaxis=dict(showgrid=False, tickfont=dict(color='#8B949E', size=11))
+                margin=dict(l=0, r=0, t=30, b=0), height=280,
+                showlegend=False,
+                xaxis=dict(tickfont=dict(size=10, color='#8B949E')),
+                yaxis=dict(showgrid=True, gridcolor='#1C212A', title="Risk Shift (%)", tickfont=dict(size=10))
             )
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
             st.markdown("""
             <div style='font-size:11px; color:#8B949E; margin-top:10px; padding:10px; background:#080C10; border-radius:5px;'>
                 <strong>How to read this chart:</strong><br>
-                <span style='color:#FF5252;'>■ RED bars</span> are negative factors increasing the birds' stress.<br>
-                <span style='color:#00E676;'>■ GREEN bars</span> are protective factors keeping the birds healthy.
+                <span style='color:#FF5252;'>■ RED bars</span> are factors increasing stress today.<br>
+                <span style='color:#00E676;'>■ GREEN bars</span> are protective factors lowering risk.
             </div>
             """, unsafe_allow_html=True)
 
@@ -917,10 +913,10 @@ elif st.session_state.nav_selection == "ML Workflow":
         marker_color='#00E676', width=0.6
     ))
     fig_shap.update_layout(
-        title="Global Feature Importance (Average Impact on Risk)",
+        title="Global Feature Importance (Historical Heavy Hitters)",
         template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
         margin=dict(l=0, r=20, t=30, b=0), height=350,
-        xaxis=dict(showgrid=True, gridcolor='#1C212A'),
+        xaxis=dict(showgrid=True, gridcolor='#1C212A', title="Average Absolute Impact (Magnitude)"),
         yaxis=dict(showgrid=False)
     )
     st.plotly_chart(fig_shap, use_container_width=True, config={'displayModeBar': False})
