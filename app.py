@@ -924,11 +924,34 @@ elif st.session_state.nav_selection == "ML Workflow":
     )
     st.plotly_chart(fig_shap, use_container_width=True, config={'displayModeBar': False})
     
-    st.markdown("""
-    <div style='background:#0B2B1B; border:1px solid #00E676; padding:15px; border-radius:8px;'>
-        <strong style='color:#00E676;'>💡 Key Finding:</strong> The SHAP analysis proves our model is learning genuine biological signals. The top risk drivers are <strong>Water-to-Feed Ratio</strong> (Panic Drinking), <strong>3-Day Temperature Averages</strong> (Cumulative Fatigue), and <strong>THI</strong> (Heat-Humidity Stress). This confirms we are detecting the precursors of heat stress long before mortality occurs.
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("#### 🔬 Biological Discovery Breakdown")
+    st.markdown("Our SHAP analysis confirms the AI has moved beyond simple accounting and is now detecting **Pre-Clinical Distress Signals**:")
+    
+    e1, e2, e3 = st.columns(3)
+    with e1:
+        st.markdown("""
+        <div style='background:#101318; padding:15px; border-radius:8px; border: 1px solid #1C212A; height:100%; border-left:4px solid #00E676;'>
+            <div style='font-size:20px; margin-bottom:10px;'>🆘</div>
+            <strong style='color:#00E676;'>Panic Drinking</strong><br>
+            <span style='color:#8B949E; font-size:12px;'>The AI flags when birds drink 5x more than they eat. This is the bird's "Biological SOS"—using water exclusively to dump heat instead of for growth.</span>
+        </div>
+        """, unsafe_allow_html=True)
+    with e2:
+        st.markdown("""
+        <div style='background:#101318; padding:15px; border-radius:8px; border: 1px solid #1C212A; height:100%; border-left:4px solid #FF5252;'>
+            <div style='font-size:20px; margin-bottom:10px;'>🔋</div>
+            <strong style='color:#FF5252;'>Cumulative Fatigue</strong><br>
+            <span style='color:#8B949E; font-size:12px;'>One hot day is a stressor; three hot days is a crash. Our model detects "Thermoregulatory Exhaustion" where the flock's cooling reserves are spent.</span>
+        </div>
+        """, unsafe_allow_html=True)
+    with e3:
+        st.markdown("""
+        <div style='background:#101318; padding:15px; border-radius:8px; border: 1px solid #1C212A; height:100%; border-left:4px solid #448AFF;'>
+            <div style='font-size:20px; margin-bottom:10px;'>🌫️</div>
+            <strong style='color:#448AFF;'>Invisible Humidity</strong><br>
+            <span style='color:#8B949E; font-size:12px;'>The model identifies "Killer Humidity"—knowing that 28&deg;C at 80% humidity is deadlier than 32&deg;C in dry air, as birds can no longer cool via panting.</span>
+        </div>
+        """, unsafe_allow_html=True)
     
     st.divider()
     
