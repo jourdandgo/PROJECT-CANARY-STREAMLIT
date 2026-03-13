@@ -875,7 +875,8 @@ elif st.session_state.nav_selection == "ML Workflow":
     st.dataframe(comp_df, use_container_width=True, hide_index=True)
     
     st.markdown('<br><strong>Why we chose "Class Weights" over "SMOTE" for rare events:</strong>', unsafe_allow_html=True)
-    st.markdown("""In a healthy flock, a "sick day" is rare. This makes it hard for a computer to learn what sickness looks like. Some data science techniques (like **SMOTE**) try to fix this by inventing "fake" sick days to rebalance the data. However, in agriculture, inventing fake data is dangerous because it might create sensor readings that are physically impossible in a real barn. Instead, we used **Class Weights**. This simply tells the AI: *"Pay 100x more attention to the real sick days we do have."* This ensures our predictions stay grounded in real-world biology.""")
+    st.markdown("""In a healthy flock, a "sick day" is rare (only ~10% of our data). This makes it hard for a computer to learn what sickness looks like. We used **Class Weights (Balanced)** to fix this.""")
+    st.markdown("""**The "Important Memo" Analogy:** Imagine a stack of 1,000 papers with only 1 "Emergency Memo" inside. If the AI treats every paper equally, it might miss the memo just because it's rare. By using **Class Weights**, we effectively stamp **"URGENT"** on that one memo in bright red. This forces the AI to pay 10x more attention to the real sick days we *do* have, rather than letting them get lost in the noise of a healthy flock.""")
     
     st.markdown('<br><strong>Why Random Forest over Logistic Regression? (Rigid Ruler vs. Expert Team)</strong>', unsafe_allow_html=True)
     st.markdown('You might notice that **Logistic Regression** achieves a very high mathematical score. However, we chose **Random Forest** for a critical biological reason:')
