@@ -1,26 +1,24 @@
-# 🦜 Project Canary: Predictive AI for Precision Poultry Management
+# 🦜 Project Canary: Predict. Prevent. Prosper.
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Project Canary** is an end-to-end predictive intelligence platform designed to protect commercial poultry flocks from "Silent Stressors." By combining advanced **Random Forest Classifiers** with **Biological Stress Indices** and a **Prescriptive DICE Engine**, the platform provides farm managers with a 24-hour early warning window to prevent mortality and optimize growth.
+**Project Canary** is an AI-powered Early Warning System (EWS) that moves beyond binary alarms. By combining Machine Learning with industry-standard Biological Roadmaps, Canary predicts mortality risk **24 hours before it happens**, turning poultry barns from reactive to proactive.
 
 ---
 
 ## 🚀 Key Features
 
-### 1. 🛑 Early Warning System (EWS)
-Predicts tomorrow's health status today. Unlike reactive tools, Canary identifies subtle environmental and consumption patterns that precede clinical illness.
+### 1. 🛡️ Clinical Early Warning
+Predicts tomorrow's health status today by identifying the environmental and behavioral precursors of stress.
 
-### 2. 🧪 Intervention Lab
-A high-fidelity "What If" simulator. Managers can adjust environmental sliders (Temperature, Humidity, Water flow) to see real-time shifts in risk probability for a specific bird age.
+### 2. 🧬 4-Stage Precision Roadmap
+Snaps barn settings to industry-standard biological plateaus (Starter, Grower, Finisher, Pre-Harvest) at the touch of a button.
 
 ### 3. 🧠 Strategic DICE Engine
-The **Dynamic Intervention & Correction Engine** calculates the "Minimum Safe Threshold." It doesn't just predict risk; it prescribes the exact environment needed to stabilize the flock.
+The **Dynamic Intervention & Correction Engine** simulates the exact environment needed to pull a flock back from the danger zone.
 
-### 4. 🤖 Gemini AI Consultation
-Integrating **Gemini 2.5 Flash** to provide natural language veterinatry advice. The AI has full context of barn telemetry and provides actionable, site-specific work orders.
+### 4. 🧪 Intervention Lab
+A high-fidelity "What If" simulator for real-time risk re-calculation.
 
 ---
 
