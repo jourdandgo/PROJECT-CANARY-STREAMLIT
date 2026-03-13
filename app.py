@@ -346,6 +346,7 @@ elif st.session_state.nav_selection == "Command Dashboard":
         """, unsafe_allow_html=True)
 
     # KPI Calcs
+    total_birds = latest_data['Total_Alive_Birds'].sum()
     total_var = (latest_data['Birds_At_Risk_Count'] * (st.session_state.base_cost + (st.session_state.growth_cost * latest_data['Bird_Age_Days']))).sum()
 
     k1, k2, k3, k4 = st.columns(4)
@@ -354,11 +355,13 @@ elif st.session_state.nav_selection == "Command Dashboard":
     k1.markdown(f"""<div class="kpi-card">
         <div class="kpi-title">⚠️ BIRDS AT RISK (TOMORROW)</div>
         <div class="kpi-value" style="color:{r_color};">{total_birds_at_risk:,} <span class="kpi-unit">Heads</span></div>
+        <div style="font-size:11px; color:#8B949E; margin-top:5px;">Out of {total_birds:,} total birds</div>
     </div>""", unsafe_allow_html=True)
 
     k2.markdown(f"""<div class="kpi-card">
         <div class="kpi-title">📉 VALUE AT RISK (TOMORROW)</div>
         <div class="kpi-value" style="color:{r_color};">₱{total_var:,.0f} <span class="kpi-unit">PHP</span></div>
+        <div style="font-size:11px; color:#8B949E; margin-top:5px;">Financial exposure based on bird age/market value.</div>
     </div>""", unsafe_allow_html=True)
 
     k3.markdown(f"""<div class="kpi-card">
@@ -367,8 +370,9 @@ elif st.session_state.nav_selection == "Command Dashboard":
     </div>""", unsafe_allow_html=True)
 
     k4.markdown(f"""<div class="kpi-card">
-        <div class="kpi-title">💧 WATER INTAKE</div>
+        <div class="kpi-title">💧 AVG. WATER INTAKE</div>
         <div class="kpi-value">{latest_data['Avg_Water_Intake_ml'].mean():.0f} <span class="kpi-unit">ml/day</span></div>
+        <div style="font-size:11px; color:#8B949E; margin-top:5px;">Daily intake average for all zones.</div>
     </div>""", unsafe_allow_html=True)
 
     st.write("")
@@ -414,7 +418,7 @@ elif st.session_state.nav_selection == "Command Dashboard":
             <p style='font-size:12px; font-weight:600; color:#8B949E; margin-bottom:20px;'>WHY ARE THEY AT RISK? ({active_data['Zone_ID']})</p>
         </div>""", unsafe_allow_html=True)
 
-        inner1, inner2 = st.columns([1, 1])
+        inner1, inner2 = st.columns([1.8, 1])
 
         with inner1:
             # Generate SHAP values for the selected zone
@@ -459,20 +463,17 @@ elif st.session_state.nav_selection == "Command Dashboard":
             ))
 
             fig.update_layout(
-                title="Risk Contribution (Local SHAP Points)",
                 template='plotly_dark', paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-                margin=dict(l=0, r=0, t=30, b=0), height=280,
+                margin=dict(l=0, r=0, t=30, b=0), height=300,
                 showlegend=False,
-                xaxis=dict(tickfont=dict(size=10, color='#8B949E')),
+                xaxis=dict(tickfont=dict(size=10, color='#8B949E'), tickangle=-30),
                 yaxis=dict(showgrid=True, gridcolor='#1C212A', title="Risk Shift (%)", tickfont=dict(size=10))
             )
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
             st.markdown("""
-            <div style='font-size:11px; color:#8B949E; margin-top:10px; padding:10px; background:#080C10; border-radius:5px;'>
-                <strong>How to read this chart:</strong><br>
-                <span style='color:#FF5252;'>■ RED bars</span> are factors increasing stress today.<br>
-                <span style='color:#00E676;'>■ GREEN bars</span> are protective factors lowering risk.
+            <div style='font-size:11px; color:#8B949E; margin-top:-10px; padding:10px; background:#080C10; border-radius:5px;'>
+                <strong>How to read:</strong> <span style='color:#FF5252;'>■ RED</span> increases stress | <span style='color:#00E676;'>■ GREEN</span> lowers risk.
             </div>
             """, unsafe_allow_html=True)
 
@@ -631,25 +632,56 @@ elif st.session_state.nav_selection == "Command Dashboard":
         # Safe bounds for temp
         c_temp = st.session_state[f'sim_temp_{st.session_state.active_zone}']
         t_min = min(15.0, c_temp - 5.0)
-        st.markdown(f"<span style='color:#00E676; font-size:10px; border:1px solid #00E676; padding:2px 6px; border-radius:4px; margin-right:5px;'>🎯 IDEAL (DAY {bird_age}): {t_target:.1f}°C</span>" + (f"<span style='color:#FF5252; font-size:10px; border:1px solid #FF5252; padding:2px 6px; border-radius:4px;'>🛑 MIN SAFE: {safe_temp:.1f}°C</span>" if safe_temp < float(active_data['Max_Temperature_C']) else ""), unsafe_allow_html=True)
+        
+        st.markdown(f"""
+        <div style='margin-bottom:10px;'>
+            <div style='background:rgba(0, 230, 118, 0.1); border:1px solid #00E676; padding:4px 12px; border-radius:20px; display:inline-block;'>
+                <span style='color:#00E676; font-size:12px; font-weight:700;'>🎯 IDEAL (DAY {bird_age}): {t_target:.1f}°C</span>
+            </div>
+            {f'''<div style='background:rgba(255, 82, 82, 0.1); border:1px solid #FF5252; padding:4px 12px; border-radius:20px; display:inline-block; margin-left:8px;'>
+                <span style='color:#FF5252; font-size:12px; font-weight:700;'>🛑 MIN SAFE: {safe_temp:.1f}°C</span>
+            </div>''' if safe_temp < float(active_data['Max_Temperature_C']) else ''}
+        </div>
+        """, unsafe_allow_html=True)
         sim_t = st.slider("Max Temperature (°C)", t_min, 45.0, c_temp, key=f"sim_temp_{st.session_state.active_zone}", help="Simulate raising or lowering the barn temperature to see how it affects tomorrow's risk probability.")
 
         # Safe bounds for humidity
         c_hum = st.session_state[f'sim_hum_{st.session_state.active_zone}']
         h_min = min(10.0, c_hum - 5.0)
-        st.markdown(f"<br><span style='color:#00E676; font-size:10px; border:1px solid #00E676; padding:2px 6px; border-radius:4px;'>🎯 IDEAL (DAY {bird_age}): {h_target:.1f}%</span>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div style='margin-bottom:10px; margin-top:15px;'>
+            <div style='background:rgba(0, 230, 118, 0.1); border:1px solid #00E676; padding:4px 12px; border-radius:20px; display:inline-block;'>
+                <span style='color:#00E676; font-size:12px; font-weight:700;'>🎯 IDEAL (DAY {bird_age}): {h_target:.1f}%</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         sim_h = st.slider("Humidity (%)", h_min, 100.0, c_hum, key=f"sim_hum_{st.session_state.active_zone}", help="Simulate adjusting ventilation to change the relative humidity.")
 
         # Safe bounds for water
         c_water = st.session_state[f'sim_water_{st.session_state.active_zone}']
         w_min = min(10.0, c_water - 10.0)
-        st.markdown(f"<br><span style='color:#00E676; font-size:10px; border:1px solid #00E676; padding:2px 6px; border-radius:4px; margin-right:5px;'>🎯 IDEAL (DAY {bird_age}): {w_target:.0f}ml</span>" + (f"<span style='color:#FF5252; font-size:10px; border:1px solid #FF5252; padding:2px 6px; border-radius:4px;'>🛑 MIN SAFE: {safe_water:.0f}ml</span>" if safe_water > float(active_data['Avg_Water_Intake_ml']) else ""), unsafe_allow_html=True)
+        st.markdown(f"""
+        <div style='margin-bottom:10px; margin-top:15px;'>
+            <div style='background:rgba(0, 230, 118, 0.1); border:1px solid #00E676; padding:4px 12px; border-radius:20px; display:inline-block;'>
+                <span style='color:#00E676; font-size:12px; font-weight:700;'>🎯 IDEAL (DAY {bird_age}): {w_target:.0f}ml</span>
+            </div>
+            {f'''<div style='background:rgba(255, 82, 82, 0.1); border:1px solid #FF5252; padding:4px 12px; border-radius:20px; display:inline-block; margin-left:8px;'>
+                <span style='color:#FF5252; font-size:12px; font-weight:700;'>🛑 MIN SAFE: {safe_water:.0f}ml</span>
+            </div>''' if safe_water > float(active_data['Avg_Water_Intake_ml']) else ''}
+        </div>
+        """, unsafe_allow_html=True)
         sim_w = st.slider("Water Intake (ml)", w_min, 1000.0, c_water, key=f"sim_water_{st.session_state.active_zone}", help="Simulate interventions to increase water consumption (e.g. flushing lines, adding electrolytes).")
 
         # Safe bounds for feed
         c_feed = st.session_state[f'sim_feed_{st.session_state.active_zone}']
         f_min = min(5.0, c_feed - 5.0)
-        st.markdown(f"<br><span style='color:#00E676; font-size:10px; border:1px solid #00E676; padding:2px 6px; border-radius:4px;'>🎯 IDEAL (DAY {bird_age}): {f_target:.0f}g</span>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div style='margin-bottom:10px; margin-top:15px;'>
+            <div style='background:rgba(0, 230, 118, 0.1); border:1px solid #00E676; padding:4px 12px; border-radius:20px; display:inline-block;'>
+                <span style='color:#00E676; font-size:12px; font-weight:700;'>🎯 IDEAL (DAY {bird_age}): {f_target:.0f}g</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         sim_f = st.slider("Feed Intake (g)", f_min, 500.0, c_feed, key=f"sim_feed_{st.session_state.active_zone}", help="Simulate the expected feed intake.")
 
 
@@ -776,8 +808,18 @@ elif st.session_state.nav_selection == "Command Dashboard":
 
     Farm-wide Status Summary (All Zones):
     {all_zones_context}
-    You can answer questions about ANY zone on the farm, comparing them or summarizing them if asked. 
-    If the user asks off-topic questions (e.g. about fruit, pop culture), politely refuse and bring the focus back to poultry mortality and barn telemetry. Keep answers concise, actionable, and formatted in clean markdown without overly large headers."""
+    
+    RESPONSE FORMAT RULES:
+    1. ALWAYS start every response with a bullet-point 'Executive Summary' in this EXACT format:
+       **Current Situation:** [1-sentence summary]
+       **Proposed Mission:** To reduce risk in {st.session_state.active_zone}, we must:
+       a) [Priority 1 Action]
+       b) [Priority 2 Action]
+       c) [Priority 3 Action]
+    
+    2. After the summary, proceed with your detailed analysis.
+    3. Keep answers concise, actionable, and formatted in clean markdown.
+    4. Refuse off-topic questions (e.g. fruit, pop culture) and bring focus back to poultry mortality and barn telemetry."""
                         model = genai.GenerativeModel('gemini-2.5-flash', system_instruction=system_instruction)
 
                         # Convert Streamlit history format to Google Generative AI format
@@ -795,7 +837,7 @@ elif st.session_state.nav_selection == "Command Dashboard":
                         response = f"⚠️ **Connection Error:** Could not reach Gemini API. Ensure the key is valid and has quota. Details: `{e}`"
                 else:
                     # Fallback Mock AI Response if no key config
-                    response = f"*(Offline Mode)*\n\nI can certainly help with that. Here are some immediate easy wins based on current telemetry:\n- Turn on the supplementary tunnel fans to increase air velocity over the birds.\n- Consider adding electrolytes to the water line to combat stress.\n- Delay the feeding schedule slightly until the peak temperature of the day has passed."
+                    response = f"*(Offline Mode)*\n\n**Current Situation:** Your birds are facing a moderate biological stress load due to current telemetry drift.\n\n**Proposed Mission:** To reduce risk in {st.session_state.active_zone}, we must:\na) Turn on supplementary tunnel fans to increase air velocity.\nb) Add electrolytes to the water line to combat dehydration.\nc) Delay feeding until peak heat has passed."
 
                 # Add assistant response to chat history
                 st.session_state.chat_messages.append({"role": "assistant", "content": response})
