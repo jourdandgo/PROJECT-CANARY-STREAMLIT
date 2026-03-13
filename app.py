@@ -858,9 +858,10 @@ elif st.session_state.nav_selection == "ML Workflow":
     st.markdown('The model is trained on `broiler_health_noisy_dataset.csv`, encompassing daily telemetry for 6 zones over a 1-year period.')
     
     st.markdown('**Engineered Biological Features:**')
+    st.markdown('- **Water-to-Feed Ratio:** Identifies "Panic Drinking"—a specific behavioral shift where birds drink excessively but stop eating to cope with high metabolic heat.')
+    st.markdown('- **3-Day Temperature Average:** Our model identifies that **Cumulative Heat** is far deadlier than a single hot hour. This feature captures the physical fatigue of the flock.')
     st.markdown('- **Temperature-Humidity Index (THI):** A standard veterinary metric combining Heat and Humidity into a single stress identifier.')
-    st.markdown('- **Water-to-Feed Ratio:** Identifies subtle behavioral shifts (e.g., chickens drinking excessively but not eating due to fever).')
-    st.markdown('- **Feed Intake Delta:** Tracks day-over-day drops in feed consumption.')
+    st.markdown('- **Age-Temp Interaction:** Explicitly models the biological fact that older, heavier birds have a much lower thermal safety margin.')
     
     st.markdown('### 2. Model Pipeline & Validation')
     st.markdown('We trained and evaluated three different architectures to determine the most robust model for our production environment using an 80/20 Train/Test split:')
@@ -877,7 +878,9 @@ elif st.session_state.nav_selection == "ML Workflow":
     st.markdown("""In a healthy flock, a "sick day" is rare. This makes it hard for a computer to learn what sickness looks like. Some data science techniques (like **SMOTE**) try to fix this by inventing "fake" sick days to rebalance the data. However, in agriculture, inventing fake data is dangerous because it might create sensor readings that are physically impossible in a real barn. Instead, we used **Class Weights**. This simply tells the AI: *"Pay 100x more attention to the real sick days we do have."* This ensures our predictions stay grounded in real-world biology.""")
     
     st.markdown('<br><strong>Why Random Forest over Gradient Boosting for Farm Data?</strong>', unsafe_allow_html=True)
-    st.markdown('As seen in the table above, Gradient Boosting often achieves slightly higher pure mathematical metrics. However, we are trying to predict *tomorrow\'s* health based on *today\'s* sensors in a rugged environment. Gradient Boosting models can be extremely sensitive to "noisy" data (like a barn thermometer getting hit by a sudden gust of wind), leading to false alarms in the real world. **Random Forest** was chosen because it looks at the data from hundreds of different angles simultaneously and takes a "majority vote." This makes it much more stable and reliable for real-world farm conditions, avoiding "overfitting" to tiny environmental glitches.')
+    st.markdown('A common question is why we don\'t use even more complex models like Gradient Boosting. Here is the simple answer:')
+    st.markdown('**Gradient Boosting** is like a perfectionist student who keeps trying to fix tiny errors from the previous test. It is powerful, but in a barn, it can overfit to "noise"—like a single sensor glitch or a sudden gust of wind. This leads to false alarms.')
+    st.markdown('**Random Forest** is like a panel of 100 average students. Each one looks at a slightly different part of the barn data. They take a **Majority Vote**, which makes the final decision much more stable and harder to confuse with weird sensor spikes. For a farmer, **stability** is more valuable than mathematical "perfection."')
     
     st.divider()
     
@@ -900,7 +903,9 @@ elif st.session_state.nav_selection == "ML Workflow":
         'Max_Temperature_C': "Barn Temperature", 'Avg_Humidity_Percent': "Barn Humidity",
         'Avg_Water_Intake_ml': "Water Intake", 'Avg_Feed_Intake_g': "Feed Intake",
         'Bird_Age_Days': "Bird Age", 'THI': "Heat-Humidity Index",
-        'Water_to_Feed_Ratio': "Water/Feed Ratio", 'Feed_Intake_Delta': "Feed Intake Change"
+        'Water_to_Feed_Ratio': "Water/Feed Ratio", 'Feed_Intake_Delta': "Feed Intake Change",
+        'Temp_3d_Avg': "3-Day Temp Avg", 'Water_3d_Avg': "3-Day Water Avg",
+        'Age_Temp_Interaction': "Age/Heat Sensitivity"
     }
     
     global_shap_df = pd.DataFrame({"Feature": [feat_labels_map.get(f, f) for f in feature_cols], "Mean Absolute Impact": mean_shap})
@@ -921,7 +926,7 @@ elif st.session_state.nav_selection == "ML Workflow":
     
     st.markdown("""
     <div style='background:#0B2B1B; border:1px solid #00E676; padding:15px; border-radius:8px;'>
-        <strong style='color:#00E676;'>💡 Key Finding:</strong> The SHAP analysis proves our model is learning genuine biological relationships, not just mathematical noise. As expected by veterinary science, <strong>Water Intake</strong> and <strong>Barn Temperature</strong> are the universal leading indicators of flock stress, outweighing simple age progression.
+        <strong style='color:#00E676;'>💡 Key Finding:</strong> The SHAP analysis proves our model is learning genuine biological signals. The top risk drivers are <strong>Water-to-Feed Ratio</strong> (Panic Drinking), <strong>3-Day Temperature Averages</strong> (Cumulative Fatigue), and <strong>THI</strong> (Heat-Humidity Stress). This confirms we are detecting the precursors of heat stress long before mortality occurs.
     </div>
     """, unsafe_allow_html=True)
     
@@ -972,7 +977,10 @@ elif st.session_state.nav_selection == "ML Workflow":
                 'Avg_Feed_Intake_g': test_f,
                 'THI': test_thi,
                 'Water_to_Feed_Ratio': test_ratio,
-                'Feed_Intake_Delta': test_delta
+                'Feed_Intake_Delta': test_delta,
+                'Temp_3d_Avg': test_t, # In a static demo, we assume the trend matches current state
+                'Water_3d_Avg': test_w,
+                'Age_Temp_Interaction': demo_age * test_t
             }])
             
             tx = scaler.transform(test_data_df[feature_cols])
